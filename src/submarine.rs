@@ -2,6 +2,10 @@ pub struct Submarine {
     pub horizontal_position: i32,
     pub depth: i32,
     pub aim: i32,
+    pub gamma: Vec<i32>,
+    pub epsilon: Vec<i32>,
+    pub oxygen_rating: Vec<i32>,
+    pub co2_scrubber_rating: Vec<i32>,
     pub diag_distribution: [i32; 12],
     pub diagnostic_count: i32,
     pub diagnostic_data: Vec<[i32; 12]>,
@@ -16,6 +20,10 @@ impl Submarine {
             diag_distribution: [0; 12],
             diagnostic_count: 0,
             diagnostic_data: Vec::new(),
+            gamma: Vec::new(),
+            epsilon: Vec::new(),
+            oxygen_rating: Vec::new(),
+            co2_scrubber_rating: Vec::new(),
         }
     }
 
@@ -32,21 +40,20 @@ impl Submarine {
         self.aim = &self.aim - units;
     }
 
-    pub fn store_diagnostic_distribution(&mut self, bits: Vec<char>) {
+    pub fn store_diagnostics(&mut self, bits: Vec<char>) {
         let mut diag_row :[i32; 12] = [-1; 12];
         for c in bits.into_iter().enumerate() {
             let (i, x): (usize, char) = c;
-
             // track distribution of each column for gamma and epsilon calculations
             if x == '1' {
                 self.diag_distribution[i] = &self.diag_distribution[i] + 1;
             }
-
-            //
-            diag_row[i] = x as i32 - 0x30; // cheap hack but good for 1s and 0s
+            diag_row[i] = x as i32 - 0x30; // cheap char to i32 for 1s and 0s. UTF-8 dangerous, tho
         }
         self.diagnostic_data.push(diag_row);
         self.diagnostic_count = &self.diagnostic_count + 1;
+        self.calculate_gamma();
+        self.calculate_epsilon();
     }
 
     pub fn maximize_least_bit(&self, bits :Vec<i32>) -> Vec<i32> {
@@ -59,15 +66,31 @@ impl Submarine {
         result
     }
 
-    pub fn get_oxygen_rating(&self) -> Vec<i32> {
-        self.get_gamma()
+    pub fn calculate_oxygen_rating(&mut self)  {
+        // create a temp space for current results
+        let mut temp:Vec<i32> = Vec::new();
+        let mut temp2:Vec<i32> = Vec::new();
+        let mut diag_row: [i32; 12] = [0; 12];
+
+        // pop one
+        if let Some(diag_row) = self.diagnostic_data.pop() {
+
+        }
+        // evaluate it for the current column
+        // include an evaluation for if its the last item or if count is balanced (need counters for both)
+        // if match, push into temp2
+        // when done, make temp = temp 2
+        // increment column for evaluation
+        // if no more columns, return last pushed value
+        self.oxygen_rating = temp;
+
     }
 
-    pub fn get_co2_scrubber_rating(&self) -> Vec<i32> {
-        self.get_gamma()
+    pub fn get_co2_scrubber_rating(&self)  {
+
     }
 
-    pub fn get_gamma(&self) -> Vec<i32> {
+    pub fn calculate_gamma(&mut self)  {
         let mut result= Vec::new();
         for bit in &self.diag_distribution {
             if bit > &(&self.diagnostic_count / 2) {
@@ -77,10 +100,10 @@ impl Submarine {
             }
 
         }
-        result
+        self.gamma = result;
     }
 
-    pub fn get_epsilon(&self) -> Vec<i32> {
+    pub fn calculate_epsilon(&mut self) {
         let mut result= Vec::new();
         for bit in &self.diag_distribution {
             if bit > &(&self.diagnostic_count / 2) {
@@ -88,18 +111,21 @@ impl Submarine {
             } else {
                 result.push(1);
             }
-
         }
-        result
+        self.epsilon = result;
     }
 
-    pub fn get_life_support_rating(&self) -> i32 {
-        self.sum_diag_bits(self.get_oxygen_rating()) *
-            self.sum_diag_bits(self.get_co2_scrubber_rating())
-    }
+    //pub fn get_life_support_rating(&self) -> i32 {
+        //self.calculate_oxygen_rating();
+        //self.calculate_co2_scrubber_rating();
+     //   self.sum_diag_bits() *
+       //     self.sum_diag_bits()
+  //  }
 
     pub fn get_power_consumption(&self) -> i32 {
-        self.sum_diag_bits(self.get_epsilon()) * self.sum_diag_bits(self.get_gamma())
+        let mut temp_gamma = self.gamma.to_vec();
+        let mut temp_epsilon = self.epsilon.to_vec();
+        self.sum_diag_bits(temp_gamma) * self.sum_diag_bits(temp_epsilon)
     }
 
     pub fn sum_diag_bits(&self, mut bits:  Vec<i32>) -> i32 {
