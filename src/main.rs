@@ -10,22 +10,31 @@ const SUBMARINE_MOVEMENT_DATA_FILE: &str = "./submarine_movement_data.txt";
 const SUB_BINARY_DIAGNOSTIC_DATA_FILE: &str = "./binary_diagnostic_data.txt";
 
 fn main() {
+    let my_sub = move_sub(submarine::Submarine::new());
     // Day 1
     println!("Number of measurements that are larger than the previous measurement: {}", get_increased_depth());
 
     // Day 2
-    println!("Final horizontal position times depth: {}", process_sub_movements());
+    println!("Final horizontal position times depth: {}",  my_sub.horizontal_position * my_sub.depth);
 
+    let my_sub = process_diagnostics(my_sub);
     // Day 3
-    
+    println!("My diagnostics and count: {:?}, {}", my_sub.diagnostics, my_sub.diagnostic_count);
+    println!("My gamma:\t{:?}", my_sub.get_gamma());
+    println!("My epsilon:\t{:?}", my_sub.get_epsilon());
+    println!("My power consumption: {}", my_sub.get_power_consumption());
 }
 
-fn process_sub_movements() -> i32 {
-    // Calculate the horizontal position and depth you would have after
-    // following the planned course. What do you get if you multiply your
-    // final horizontal position by your final depth?
-    let my_uboat = move_sub(submarine::Submarine::new());
-    my_uboat.horizontal_position * my_uboat.depth
+fn process_diagnostics(mut uboat: Submarine) -> Submarine {
+    if let Ok(lines) = read_lines(SUB_BINARY_DIAGNOSTIC_DATA_FILE) {
+        for line in lines {
+            if let Ok(bits) = line {
+                let char_vec: Vec<char> = bits.chars().collect();
+                uboat.process_diagnostic_bits(char_vec);
+            }
+        }
+    }
+    uboat
 }
 
 fn move_sub(mut uboat: Submarine) -> Submarine {
