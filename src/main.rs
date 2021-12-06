@@ -19,10 +19,11 @@ fn main() {
 
     let my_sub = process_diagnostics(my_sub);
     // Day 3
-    println!("My diagnostics and count: {:?}, {}", my_sub.diagnostics, my_sub.diagnostic_count);
+    println!("My diagnostics and count: {:?}, {}", my_sub.diag_distribution, my_sub.diagnostic_count);
     println!("My gamma:\t{:?}", my_sub.get_gamma());
     println!("My epsilon:\t{:?}", my_sub.get_epsilon());
     println!("My power consumption: {}", my_sub.get_power_consumption());
+    println!("My life support rating: {}", my_sub.get_life_support_rating());
 }
 
 fn process_diagnostics(mut uboat: Submarine) -> Submarine {
@@ -30,7 +31,7 @@ fn process_diagnostics(mut uboat: Submarine) -> Submarine {
         for line in lines {
             if let Ok(bits) = line {
                 let char_vec: Vec<char> = bits.chars().collect();
-                uboat.process_diagnostic_bits(char_vec);
+                uboat.store_diagnostic_distribution(char_vec);
             }
         }
     }
