@@ -16,6 +16,7 @@ pub struct Submarine {
     pub diagnostic_data: Vec<[i32; 12]>,
     pub bingo_draw: Vec<i32>,
     pub bingo_boards: Vec<Vec<i32>>,
+    pub bingo_winning_score: i32,
 }
 
 impl Submarine {
@@ -33,6 +34,31 @@ impl Submarine {
             co2_scrubber_rating: Vec::new(),
             bingo_draw: Vec::new(),
             bingo_boards: vec![vec![0; 5]; 5],
+            bingo_winning_score: -1,
+        }
+    }
+
+    pub fn play_bingo(&mut self, filename :&str) {
+        if let Ok(lines) = Submarine::read_lines(filename) {
+            for (index, line) in lines.enumerate() {
+                if index == 0 {
+                    if let Ok(line_value) = line {
+                        let values = line_value.split(',');
+                        for v in values {
+                            if let Ok(parsed) = v.parse() {
+                                self.bingo_draw.push(parsed);
+                            }
+                        }
+                    }
+                } else {
+                    if let Ok(line_value) = line {
+                        if line_value.len() > 0 {
+                            println!("{:?}", line_value);
+                        }
+                        //if let Ok(value) = line_value.parse() {}
+                    }
+                }
+            }
         }
     }
 
@@ -76,10 +102,6 @@ impl Submarine {
         Ok(io::BufReader::new(file).lines())
     }
 
-    // for each line in the file after first,
-// compare against the prior line
-// if numbers is greater, increment the count
-// return the count at the end of the file
     pub fn get_increased_depth(&self, filename: &str) -> i32 {
         let mut current_window = [-1, -1, -1];
         let mut position:usize = 0;
@@ -124,33 +146,16 @@ impl Submarine {
         increased_count
     }
 
-    pub fn forward(&mut self, distance: i32) {
-        self.horizontal_position = &self.horizontal_position + distance;
-        self.depth = &self.depth + (&self.aim * distance);
+    pub fn get_life_support_rating(&mut self) -> i32 {
+        let temp_oxygen = self.get_oxygen();
+        let temp_co2 = self.get_co2();
+        self.sum_diag_bits(temp_oxygen) * self.sum_diag_bits(temp_co2)
     }
 
-    pub fn down(&mut self, units: i32) {
-        self.aim = &self.aim + units;
-    }
-
-    pub fn up(&mut self, units: i32) {
-        self.aim = &self.aim - units;
-    }
-
-    pub fn store_diagnostics(&mut self, bits: Vec<char>) {
-        let mut diag_row :[i32; 12] = [-1; 12];
-        for c in bits.into_iter().enumerate() {
-            let (i, x): (usize, char) = c;
-            // track distribution of each column for gamma and epsilon calculations
-            if x == '1' {
-                self.diag_distribution[i] = &self.diag_distribution[i] + 1;
-            }
-            diag_row[i] = x as i32 - 0x30; // cheap char to i32 for 1s and 0s. UTF-8 dangerous, tho
-        }
-        self.diagnostic_data.push(diag_row);
-        self.diagnostic_count = &self.diagnostic_count + 1;
-        self.calculate_gamma();
-        self.calculate_epsilon();
+    pub fn get_power_consumption(&self) -> i32 {
+        let temp_gamma = self.gamma.to_vec();
+        let temp_epsilon = self.epsilon.to_vec();
+        self.sum_diag_bits(temp_gamma) * self.sum_diag_bits(temp_epsilon)
     }
 
     pub fn calculate_life_support_ratings(&mut self, oxygen: bool)  {
@@ -190,22 +195,21 @@ impl Submarine {
         }
     }
 
-    // i'd love to not borrow in the case we have a value in co2. how?
-    pub fn get_co2(&mut self) -> Vec<i32> {
+    fn get_co2(&mut self) -> Vec<i32> {
         if self.co2_scrubber_rating.len() == 0 {
             self.calculate_life_support_ratings(false);
         }
         self.co2_scrubber_rating.to_vec()
     }
 
-    pub fn get_oxygen(&mut self) -> Vec<i32> {
+    fn get_oxygen(&mut self) -> Vec<i32> {
         if self.oxygen_rating.len() == 0 {
             self.calculate_life_support_ratings(true);
         }
         self.oxygen_rating.to_vec()
     }
 
-    pub fn calculate_gamma(&mut self)  {
+    fn calculate_gamma(&mut self)  {
         let mut result= Vec::new();
         for bit in &self.diag_distribution {
             if bit > &(&self.diagnostic_count / 2) {
@@ -218,7 +222,7 @@ impl Submarine {
         self.gamma = result;
     }
 
-    pub fn calculate_epsilon(&mut self) {
+    fn calculate_epsilon(&mut self) {
         let mut result= Vec::new();
         for bit in &self.diag_distribution {
             if bit > &(&self.diagnostic_count / 2) {
@@ -230,19 +234,7 @@ impl Submarine {
         self.epsilon = result;
     }
 
-    pub fn get_life_support_rating(&mut self) -> i32 {
-        let temp_oxygen = self.get_oxygen();
-        let temp_co2 = self.get_co2();
-        self.sum_diag_bits(temp_oxygen) * self.sum_diag_bits(temp_co2)
-    }
-
-    pub fn get_power_consumption(&self) -> i32 {
-        let temp_gamma = self.gamma.to_vec();
-        let temp_epsilon = self.epsilon.to_vec();
-        self.sum_diag_bits(temp_gamma) * self.sum_diag_bits(temp_epsilon)
-    }
-
-    pub fn sum_diag_bits(&self, mut bits:  Vec<i32>) -> i32 {
+    fn sum_diag_bits(&self, mut bits:  Vec<i32>) -> i32 {
         let mut result = 0;
         let mut bit_position = 0;
         let base:i32 = 2;
@@ -252,4 +244,34 @@ impl Submarine {
         }
         result
     }
+
+    fn forward(&mut self, distance: i32) {
+        self.horizontal_position = &self.horizontal_position + distance;
+        self.depth = &self.depth + (&self.aim * distance);
+    }
+
+    fn down(&mut self, units: i32) {
+        self.aim = &self.aim + units;
+    }
+
+    fn up(&mut self, units: i32) {
+        self.aim = &self.aim - units;
+    }
+
+    fn store_diagnostics(&mut self, bits: Vec<char>) {
+        let mut diag_row :[i32; 12] = [-1; 12];
+        for c in bits.into_iter().enumerate() {
+            let (i, x): (usize, char) = c;
+            // track distribution of each column for gamma and epsilon calculations
+            if x == '1' {
+                self.diag_distribution[i] = &self.diag_distribution[i] + 1;
+            }
+            diag_row[i] = x as i32 - 0x30; // cheap char to i32 for 1s and 0s. UTF-8 dangerous, tho
+        }
+        self.diagnostic_data.push(diag_row);
+        self.diagnostic_count = &self.diagnostic_count + 1;
+        self.calculate_gamma();
+        self.calculate_epsilon();
+    }
+
 }
