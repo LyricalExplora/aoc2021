@@ -56,38 +56,56 @@ impl Submarine {
         self.calculate_epsilon();
     }
 
-    pub fn maximize_least_bit(&self, bits :Vec<i32>) -> Vec<i32> {
-        // this is a shortcut and may have a bug
-
-        let mut result = bits;
-        if let Some(peek) = result.pop() {
-            result.push(1);
+    pub fn calculate_life_support_ratings(&mut self, oxygen: bool)  {
+        let mut local_diags = self.diagnostic_data.to_vec();
+        for column in 0..12 {
+            let mut ones: Vec<[i32; 12]> = Vec::new();
+            let mut zeros: Vec<[i32; 12]> = Vec::new();
+            if local_diags.len() > 1 {
+                while let Some(diag_row) = local_diags.pop() {
+                    if diag_row[column] == 0 {
+                        zeros.push(diag_row);
+                    } else {
+                        ones.push(diag_row)
+                    }
+                }
+                if oxygen { // we are calculating oxygen, so store ones when equal
+                    if zeros.len() > ones.len() {
+                        local_diags = zeros;
+                    } else {
+                        local_diags = ones;
+                    }
+                } else { // we are handling co2, so store zeros when equal
+                    if zeros.len() <= ones.len() {
+                        local_diags = zeros;
+                    } else {
+                        local_diags = ones;
+                    }
+                }
+            }
         }
-        result
+        if let Some(result) = local_diags.pop() {
+            if oxygen {
+                self.oxygen_rating = result.to_vec();
+            } else {
+                self.co2_scrubber_rating = result.to_vec();
+            }
+        }
     }
 
-    pub fn calculate_oxygen_rating(&mut self)  {
-        // create a temp space for current results
-        let mut temp:Vec<i32> = Vec::new();
-        let mut temp2:Vec<i32> = Vec::new();
-        let mut diag_row: [i32; 12] = [0; 12];
-
-        // pop one
-        if let Some(diag_row) = self.diagnostic_data.pop() {
-
+    // i'd love to not borrow in the case we have a value in co2. how?
+    pub fn get_co2(&mut self) -> Vec<i32> {
+        if self.co2_scrubber_rating.len() == 0 {
+            self.calculate_life_support_ratings(false);
         }
-        // evaluate it for the current column
-        // include an evaluation for if its the last item or if count is balanced (need counters for both)
-        // if match, push into temp2
-        // when done, make temp = temp 2
-        // increment column for evaluation
-        // if no more columns, return last pushed value
-        self.oxygen_rating = temp;
-
+        self.co2_scrubber_rating.to_vec()
     }
 
-    pub fn get_co2_scrubber_rating(&self)  {
-
+    pub fn get_oxygen(&mut self) -> Vec<i32> {
+        if self.oxygen_rating.len() == 0 {
+            self.calculate_life_support_ratings(true);
+        }
+        self.oxygen_rating.to_vec()
     }
 
     pub fn calculate_gamma(&mut self)  {
@@ -115,16 +133,15 @@ impl Submarine {
         self.epsilon = result;
     }
 
-    //pub fn get_life_support_rating(&self) -> i32 {
-        //self.calculate_oxygen_rating();
-        //self.calculate_co2_scrubber_rating();
-     //   self.sum_diag_bits() *
-       //     self.sum_diag_bits()
-  //  }
+    pub fn get_life_support_rating(&mut self) -> i32 {
+        let temp_oxygen = self.get_oxygen();
+        let temp_co2 = self.get_co2();
+        self.sum_diag_bits(temp_oxygen) * self.sum_diag_bits(temp_co2)
+    }
 
     pub fn get_power_consumption(&self) -> i32 {
-        let mut temp_gamma = self.gamma.to_vec();
-        let mut temp_epsilon = self.epsilon.to_vec();
+        let temp_gamma = self.gamma.to_vec();
+        let temp_epsilon = self.epsilon.to_vec();
         self.sum_diag_bits(temp_gamma) * self.sum_diag_bits(temp_epsilon)
     }
 
