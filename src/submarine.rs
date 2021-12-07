@@ -15,7 +15,7 @@ pub struct Submarine {
     pub diagnostic_count: i32,
     pub diagnostic_data: Vec<[i32; 12]>,
     pub bingo_draw: Vec<i32>,
-    pub bingo_boards: Vec<Vec<i32>>,
+    pub bingo_boards: Vec<Vec<[i32; 5]>>,
     pub bingo_winning_score: i32,
 }
 
@@ -33,33 +33,21 @@ impl Submarine {
             oxygen_rating: Vec::new(),
             co2_scrubber_rating: Vec::new(),
             bingo_draw: Vec::new(),
-            bingo_boards: vec![vec![0; 5]; 5],
+            bingo_boards: vec![vec![[0; 5]; 5]; 3],
             bingo_winning_score: -1,
         }
     }
 
+
+
+    fn calculate_bingo_winner(&mut self) {
+
+    }
+
     pub fn play_bingo(&mut self, filename :&str) {
-        if let Ok(lines) = Submarine::read_lines(filename) {
-            for (index, line) in lines.enumerate() {
-                if index == 0 {
-                    if let Ok(line_value) = line {
-                        let values = line_value.split(',');
-                        for v in values {
-                            if let Ok(parsed) = v.parse() {
-                                self.bingo_draw.push(parsed);
-                            }
-                        }
-                    }
-                } else {
-                    if let Ok(line_value) = line {
-                        if line_value.len() > 0 {
-                            println!("{:?}", line_value);
-                        }
-                        //if let Ok(value) = line_value.parse() {}
-                    }
-                }
-            }
-        }
+        self.store_bingo_data(filename);
+        self.calculate_bingo_winner();
+
     }
 
     pub fn process_diagnostics(&mut self, filename: &str) {
@@ -88,6 +76,49 @@ impl Submarine {
                                 } else if direction == "up" {
                                     self.up(distance_value);
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn store_bingo_data(&mut self, filename :&str) {
+        let mut cur_row = [0; 5];
+        let mut cur_board = vec![[0; 5]; 5];
+        let mut row_count = 0;
+        let mut board_index = 0;
+        if let Ok(lines) = Submarine::read_lines(filename) {
+            for (index, line) in lines.enumerate() {
+                if index == 0 {
+                    if let Ok(line_value) = line {
+                        let values = line_value.split(',');
+                        for v in values {
+                            if let Ok(parsed) = v.parse() {
+                                self.bingo_draw.push(parsed);
+                            }
+                        }
+                    }
+                } else if index > 1 {
+                    if let Ok(line_value) = line {
+                        if line_value.len() > 0 {
+                            let values = line_value.split_whitespace();
+                            for (i, v) in values.enumerate() {
+                                //println!("index {} value {}", i, v);
+                                if let Ok(parsed) = v.parse() {
+                                    cur_row[i] = parsed;
+                                }
+                            }
+                            cur_board[row_count] = cur_row;
+                            row_count += 1;
+                            //println!("{:?}", cur_board);
+                            //println!("row count {}", row_count);
+                            if row_count == 5 {
+                                self.bingo_boards[board_index] = cur_board.clone();
+                                println!("row count {} {:?}", row_count, cur_board);
+                                row_count = 0;
+                                board_index += 1;
                             }
                         }
                     }

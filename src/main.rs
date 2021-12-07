@@ -30,6 +30,7 @@ fn main() {
     // Day 4
     println!("Winning bingo score: {}", my_sub.bingo_winning_score);
     println!("{:?}", my_sub.bingo_draw);
+    println!("{:?}", my_sub.bingo_boards[1][1][1]);
 }
 
 
