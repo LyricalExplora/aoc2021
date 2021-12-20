@@ -17,6 +17,7 @@ pub struct Submarine {
     pub bingo_draw: Vec<i32>,
     pub bingo_boards: Vec<Vec<[i32; 5]>>,
     pub bingo_winning_score: i32,
+    pub winning_bingo_boards: Vec<Vec<[i32; 5]>>,
 }
 
 impl Submarine {
@@ -35,19 +36,92 @@ impl Submarine {
             bingo_draw: Vec::new(),
             bingo_boards: vec![vec![[0; 5]; 5]; 3],
             bingo_winning_score: -1,
+            winning_bingo_boards: vec![vec![[0; 5]; 5]; 3],
         }
     }
 
+    // score rule: sum all un-called numbers on the board then multiply by last called number
+    fn score_winning_board(board: &Vec<[i32; 5]>, last_called: i32) -> i32 {
+        let mut winning_score = 0;
+        for i in 0..5 {
+            for j in 0..5 {
+                if board[i][j] != -1 {
+                    winning_score += board[i][j];
+                }
+            }
+        }
+        winning_score * last_called
+    }
 
+    fn bingo_winner_check(board: &Vec<[i32; 5]>, x :usize, y :usize) -> bool {
+        let mut bingo = false;
+
+        // validate column first
+        for i in 0..5 {
+            if board[i][y] != -1 {
+                break;
+            }
+            if i == 4 {
+                bingo = true;
+            }
+        }
+
+        // validate row next if we didn't already win
+        if !bingo {
+            for j in 0..5 {
+                if board[x][j] != -1 {
+                    break;
+                }
+                if j == 4 {
+                    bingo = true;
+                }
+            }
+        }
+        bingo
+    }
+
+    fn got_bingo(board: &mut Vec<[i32; 5]>, last_called :i32) -> bool {
+        for i in 0..5 {
+            for j in 0..5 {
+                if board[i][j] == last_called {
+                    board[i][j] = -1;
+                    return Submarine::bingo_winner_check(&board, i, j);
+                }
+            }
+        }
+        false
+    }
 
     fn calculate_bingo_winner(&mut self) {
+        let mut last_called = -1;
+        for called in self.bingo_draw.iter() {
+            last_called = *called;
+            // clone bingo_boards to avoid double-mutable-borrow on bingo_boards
+            let working_boards = self.bingo_boards.clone();
+            for board in &mut self.bingo_boards {
+                if Submarine::got_bingo(board, last_called) {
+                    // Day 4 part 1 is here.
+                    // println!("{:?} last_called {} ", board, last_called);
+                    self.bingo_winning_score = Submarine::score_winning_board(&board, last_called);
+                    return;
 
+                    // Day 4 part 2 is here
+                    //self.winning_bingo_boards.push(board.clone());
+                    //self.bingo_boards.remove(i);
+                }
+            }
+            //for board in &self.bingo_boards {
+            //    println!("{:?} last_called {} ", board, last_called);
+           // }
+           // for board in &self.winning_bingo_boards {
+            //   println!("{:?} last_called {} ", board, last_called);
+            //}
+        }
     }
 
     pub fn play_bingo(&mut self, filename :&str) {
         self.store_bingo_data(filename);
         self.calculate_bingo_winner();
-
     }
 
     pub fn process_diagnostics(&mut self, filename: &str) {
@@ -116,7 +190,7 @@ impl Submarine {
                             //println!("row count {}", row_count);
                             if row_count == 5 {
                                 self.bingo_boards[board_index] = cur_board.clone();
-                                println!("row count {} {:?}", row_count, cur_board);
+                                //println!("row count {} {:?}", row_count, cur_board);
                                 row_count = 0;
                                 board_index += 1;
                             }
@@ -304,5 +378,4 @@ impl Submarine {
         self.calculate_gamma();
         self.calculate_epsilon();
     }
-
 }
