@@ -15,7 +15,7 @@ fn main() {
     my_sub.move_sub(SUBMARINE_MOVEMENT_DATA_FILE);
     my_sub.process_diagnostics(SUB_TEST_DIAGNOSTIC_DATA_FILE);
     my_sub.process_diagnostics(SUB_BINARY_DIAGNOSTIC_DATA_FILE);
-    my_sub.play_bingo(SUB_TEST_BINGO_DATA_FILE);
+    my_sub.play_bingo(SUB_BINGO_DATA_FILE);
 
     // Day 1
     println!("Number of measurements that are larger than the previous measurement: {}", my_sub.get_increased_depth(DEPTH_DATA_FILE));

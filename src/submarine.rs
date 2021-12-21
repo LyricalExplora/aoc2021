@@ -18,6 +18,7 @@ pub struct Submarine {
     pub bingo_boards: Vec<Vec<[i32; 5]>>,
     pub bingo_winning_score: i32,
     pub winning_bingo_boards: Vec<Vec<[i32; 5]>>,
+    pub last_winning_number: i32,
 }
 
 impl Submarine {
@@ -34,9 +35,10 @@ impl Submarine {
             oxygen_rating: Vec::new(),
             co2_scrubber_rating: Vec::new(),
             bingo_draw: Vec::new(),
-            bingo_boards: vec![vec![[0; 5]; 5]; 3],
+            bingo_boards: vec![vec![[0; 5]; 5]; 120],
             bingo_winning_score: -1,
-            winning_bingo_boards: vec![vec![[0; 5]; 5]; 3],
+            winning_bingo_boards: vec![vec![[0; 5]; 5]; 120],
+            last_winning_number: -1,
         }
     }
 
@@ -53,7 +55,7 @@ impl Submarine {
         winning_score * last_called
     }
 
-    fn bingo_winner_check(board: &Vec<[i32; 5]>, x :usize, y :usize) -> bool {
+    fn bingo_winner_check(board: &Vec<[i32; 5]>, x: usize, y: usize) -> bool {
         let mut bingo = false;
 
         // validate column first
@@ -80,11 +82,12 @@ impl Submarine {
         bingo
     }
 
-    fn got_bingo(board: &mut Vec<[i32; 5]>, last_called :i32) -> bool {
+    fn got_bingo(board: &mut Vec<[i32; 5]>, last_called: i32) -> bool {
         for i in 0..5 {
             for j in 0..5 {
                 if board[i][j] == last_called {
                     board[i][j] = -1;
+                    // println!("i: {}, j: {}, board: {:?} last_called {} ", i, j, board, last_called);
                     return Submarine::bingo_winner_check(&board, i, j);
                 }
             }
@@ -92,36 +95,49 @@ impl Submarine {
         false
     }
 
-    fn calculate_bingo_winner(&mut self) {
-        let mut last_called = -1;
-        for called in self.bingo_draw.iter() {
-            last_called = *called;
-            // clone bingo_boards to avoid double-mutable-borrow on bingo_boards
-            let working_boards = self.bingo_boards.clone();
-            for board in &mut self.bingo_boards {
-                if Submarine::got_bingo(board, last_called) {
-                    // Day 4 part 1 is here.
-                    // println!("{:?} last_called {} ", board, last_called);
-                    self.bingo_winning_score = Submarine::score_winning_board(&board, last_called);
-                    return;
-
-                    // Day 4 part 2 is here
-                    //self.winning_bingo_boards.push(board.clone());
-                    //self.bingo_boards.remove(i);
-                }
+    fn wipe_board(board: &mut Vec<[i32; 5]>) {
+        for i in 0..5 {
+            for j in 0..5 {
+                board[i][j] = -2;
             }
-            //for board in &self.bingo_boards {
-            //    println!("{:?} last_called {} ", board, last_called);
-           // }
-           // for board in &self.winning_bingo_boards {
-            //   println!("{:?} last_called {} ", board, last_called);
-            //}
         }
     }
 
-    pub fn play_bingo(&mut self, filename :&str) {
+    fn calculate_bingo_winner(&mut self) {
+        let mut working_boards = self.bingo_boards.to_vec();
+        for last_called in self.bingo_draw.iter() {
+            // clone bingo_boards to avoid double-mutable-borrow on bingo_boards
+            //for board in &mut working_boards {
+            //let mut i = 0;
+            for board in &mut self.bingo_boards {
+                if Submarine::got_bingo(board, *last_called) {
+
+                    // Day 4 part 1 is here.
+                    //println!("{:?} last_called {} ", board, last_called);
+                    // self.bingo_winning_score = Submarine::score_winning_board(&board, *last_called);
+
+
+                    // Day 4 part 2 is here
+                    self.winning_bingo_boards.push(board.clone());
+                    Submarine::wipe_board(board);
+                    self.last_winning_number = *last_called;
+                    // println!("{:?} last_called {} last_winning {} ", board, last_called, self.last_winning_number);
+                }
+            }
+        }
+       // for board in &self.bingo_boards {
+        //    println!("{:?} last_called {} ", board, last_called);
+       // }
+        //for board in &self.winning_bingo_boards {
+        //   println!("{:?} last_called {} ", board, last_called);
+    }
+
+
+    pub fn play_bingo(&mut self, filename: &str) {
         self.store_bingo_data(filename);
         self.calculate_bingo_winner();
+        println!("last_winning {} ", self.last_winning_number);
+        self.bingo_winning_score = Submarine::score_winning_board(&self.winning_bingo_boards.pop().unwrap(), self.last_winning_number);
     }
 
     pub fn process_diagnostics(&mut self, filename: &str) {
@@ -158,7 +174,7 @@ impl Submarine {
         }
     }
 
-    fn store_bingo_data(&mut self, filename :&str) {
+    fn store_bingo_data(&mut self, filename: &str) {
         let mut cur_row = [0; 5];
         let mut cur_board = vec![[0; 5]; 5];
         let mut row_count = 0;
@@ -209,7 +225,7 @@ impl Submarine {
 
     pub fn get_increased_depth(&self, filename: &str) -> i32 {
         let mut current_window = [-1, -1, -1];
-        let mut position:usize = 0;
+        let mut position: usize = 0;
         let mut increased_count = 0;
         // Day 1 part 1let mut prior_line = -1;
         let mut prior_sum = -1;
@@ -263,7 +279,7 @@ impl Submarine {
         self.sum_diag_bits(temp_gamma) * self.sum_diag_bits(temp_epsilon)
     }
 
-    pub fn calculate_life_support_ratings(&mut self, oxygen: bool)  {
+    pub fn calculate_life_support_ratings(&mut self, oxygen: bool) {
         let mut local_diags = self.diagnostic_data.to_vec();
         for column in 0..12 {
             let mut ones: Vec<[i32; 12]> = Vec::new();
@@ -314,21 +330,20 @@ impl Submarine {
         self.oxygen_rating.to_vec()
     }
 
-    fn calculate_gamma(&mut self)  {
-        let mut result= Vec::new();
+    fn calculate_gamma(&mut self) {
+        let mut result = Vec::new();
         for bit in &self.diag_distribution {
             if bit > &(&self.diagnostic_count / 2) {
                 result.push(1);
             } else {
                 result.push(0);
             }
-
         }
         self.gamma = result;
     }
 
     fn calculate_epsilon(&mut self) {
-        let mut result= Vec::new();
+        let mut result = Vec::new();
         for bit in &self.diag_distribution {
             if bit > &(&self.diagnostic_count / 2) {
                 result.push(0);
@@ -339,10 +354,10 @@ impl Submarine {
         self.epsilon = result;
     }
 
-    fn sum_diag_bits(&self, mut bits:  Vec<i32>) -> i32 {
+    fn sum_diag_bits(&self, mut bits: Vec<i32>) -> i32 {
         let mut result = 0;
         let mut bit_position = 0;
-        let base:i32 = 2;
+        let base: i32 = 2;
         while let Some(bit) = bits.pop() {
             result = result + (bit * (base.pow(bit_position)));
             bit_position += 1;
@@ -364,7 +379,7 @@ impl Submarine {
     }
 
     fn store_diagnostics(&mut self, bits: Vec<char>) {
-        let mut diag_row :[i32; 12] = [-1; 12];
+        let mut diag_row: [i32; 12] = [-1; 12];
         for c in bits.into_iter().enumerate() {
             let (i, x): (usize, char) = c;
             // track distribution of each column for gamma and epsilon calculations
