@@ -1,7 +1,5 @@
 use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
-
+use std::io::{BufReader, Error, Lines};
 
 pub struct Submarine {
     pub horizontal_position: i32,
@@ -41,6 +39,7 @@ impl Submarine {
             last_winning_number: -1,
         }
     }
+
 
     // score rule: sum all un-called numbers on the board then multiply by last called number
     fn score_winning_board(board: &Vec<[i32; 5]>, last_called: i32) -> i32 {
@@ -95,6 +94,9 @@ impl Submarine {
         false
     }
 
+    // this is a dirty hack to remove winners from further processing.
+    // it is expensive and bad and should be replaced with a flag on each board
+    // that tracks if it is already a winner.
     fn wipe_board(board: &mut Vec<[i32; 5]>) {
         for i in 0..5 {
             for j in 0..5 {
@@ -104,44 +106,32 @@ impl Submarine {
     }
 
     fn calculate_bingo_winner(&mut self) {
-        let mut working_boards = self.bingo_boards.to_vec();
         for last_called in self.bingo_draw.iter() {
-            // clone bingo_boards to avoid double-mutable-borrow on bingo_boards
-            //for board in &mut working_boards {
-            //let mut i = 0;
             for board in &mut self.bingo_boards {
                 if Submarine::got_bingo(board, *last_called) {
-
                     // Day 4 part 1 is here.
-                    //println!("{:?} last_called {} ", board, last_called);
                     // self.bingo_winning_score = Submarine::score_winning_board(&board, *last_called);
-
 
                     // Day 4 part 2 is here
                     self.winning_bingo_boards.push(board.clone());
                     Submarine::wipe_board(board);
                     self.last_winning_number = *last_called;
-                    // println!("{:?} last_called {} last_winning {} ", board, last_called, self.last_winning_number);
                 }
             }
         }
-       // for board in &self.bingo_boards {
-        //    println!("{:?} last_called {} ", board, last_called);
-       // }
-        //for board in &self.winning_bingo_boards {
-        //   println!("{:?} last_called {} ", board, last_called);
     }
 
-
-    pub fn play_bingo(&mut self, filename: &str) {
-        self.store_bingo_data(filename);
+    pub fn play_bingo(&mut self, reader: Result<Lines<BufReader<File>>, std::io::Error>) {
+        self.store_bingo_data(reader);
         self.calculate_bingo_winner();
         println!("last_winning {} ", self.last_winning_number);
-        self.bingo_winning_score = Submarine::score_winning_board(&self.winning_bingo_boards.pop().unwrap(), self.last_winning_number);
+        if let Some(last_winner) = &self.winning_bingo_boards.pop() {
+            self.bingo_winning_score = Submarine::score_winning_board(last_winner, self.last_winning_number);
+        }
     }
 
-    pub fn process_diagnostics(&mut self, filename: &str) {
-        if let Ok(lines) = Submarine::read_lines(filename) {
+    pub fn process_diagnostics(&mut self, reader: Result<Lines<BufReader<File>>, std::io::Error>) {
+        if let Ok(lines) = reader {
             for line in lines {
                 if let Ok(bits) = line {
                     let char_vec: Vec<char> = bits.chars().collect();
@@ -151,8 +141,8 @@ impl Submarine {
         }
     }
 
-    pub fn move_sub(&mut self, filename: &str) {
-        if let Ok(lines) = Submarine::read_lines(filename) {
+    pub fn move_sub(&mut self, reader: Result<Lines<BufReader<File>>, std::io::Error>) {
+        if let Ok(lines) = reader {
             for line in lines {
                 if let Ok(movement) = line {
                     let mut iter = movement.split_whitespace();
@@ -174,12 +164,12 @@ impl Submarine {
         }
     }
 
-    fn store_bingo_data(&mut self, filename: &str) {
+    fn store_bingo_data(&mut self, reader: Result<Lines<BufReader<File>>, Error>) {
         let mut cur_row = [0; 5];
         let mut cur_board = vec![[0; 5]; 5];
         let mut row_count = 0;
         let mut board_index = 0;
-        if let Ok(lines) = Submarine::read_lines(filename) {
+        if let Ok(lines) = reader {
             for (index, line) in lines.enumerate() {
                 if index == 0 {
                     if let Ok(line_value) = line {
@@ -217,20 +207,14 @@ impl Submarine {
         }
     }
 
-    fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-        where P: AsRef<Path> {
-        let file = File::open(filename)?;
-        Ok(io::BufReader::new(file).lines())
-    }
-
-    pub fn get_increased_depth(&self, filename: &str) -> i32 {
+    pub fn get_increased_depth(&self, reader: Result<Lines<BufReader<File>>, std::io::Error>) -> i32 {
         let mut current_window = [-1, -1, -1];
         let mut position: usize = 0;
         let mut increased_count = 0;
         // Day 1 part 1let mut prior_line = -1;
         let mut prior_sum = -1;
 
-        if let Ok(lines) = Submarine::read_lines(filename) {
+        if let Ok(lines) = reader {
             for line in lines {
                 if let Ok(line_value) = line {
                     if let Ok(value) = line_value.parse() {
@@ -270,13 +254,13 @@ impl Submarine {
     pub fn get_life_support_rating(&mut self) -> i32 {
         let temp_oxygen = self.get_oxygen();
         let temp_co2 = self.get_co2();
-        self.sum_diag_bits(temp_oxygen) * self.sum_diag_bits(temp_co2)
+        Submarine::sum_diag_bits(temp_oxygen) * Submarine::sum_diag_bits(temp_co2)
     }
 
     pub fn get_power_consumption(&self) -> i32 {
         let temp_gamma = self.gamma.to_vec();
         let temp_epsilon = self.epsilon.to_vec();
-        self.sum_diag_bits(temp_gamma) * self.sum_diag_bits(temp_epsilon)
+        Submarine::sum_diag_bits(temp_gamma) * Submarine::sum_diag_bits(temp_epsilon)
     }
 
     pub fn calculate_life_support_ratings(&mut self, oxygen: bool) {
@@ -354,7 +338,7 @@ impl Submarine {
         self.epsilon = result;
     }
 
-    fn sum_diag_bits(&self, mut bits: Vec<i32>) -> i32 {
+    fn sum_diag_bits(mut bits: Vec<i32>) -> i32 {
         let mut result = 0;
         let mut bit_position = 0;
         let base: i32 = 2;
