@@ -1,9 +1,12 @@
+#![feature(core_intrinsics)]
+
 mod submarine;
 mod hydrothermals;
 
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
+use crate::hydrothermals::{Hydrothermal, Point, VentLine};
 
 const DEPTH_DATA_FILE: &str = "./sea_depth_data.txt";
 const SUBMARINE_MOVEMENT_DATA_FILE: &str = "./submarine_movement_data.txt";
@@ -12,7 +15,8 @@ const SUB_TEST_DIAGNOSTIC_DATA_FILE: &str = "./test_diag_data.txt";
 const SUB_TEST_BINGO_DATA_FILE: &str = "./test_bingo_data.txt";
 const SUB_BINGO_DATA_FILE: &str = "./bingo_data_file.txt";
 const SUB_TEST_HYDRO_THERMAL_DATA_FILE: &str = "./test_hydro_thermal_data.txt";
-const SUB_HYDRO_THERMAL_DATA_FILE: &str = "./hydro_thermal_data_file.txt";
+const SUB_TEST2_HYDRO_THERMAL_DATA_FILE: &str = "./test_hydro_thermal_data2.txt";
+const SUB_HYDRO_THERMAL_DATA_FILE: &str = "./hydro_thermal_data.txt";
 
 
 fn main() {
@@ -39,8 +43,11 @@ fn main() {
     println!("Winning bingo score: {}", my_sub.bingo_winning_score);
 
     // Day 5
-    let hydrothermal_reader = read_lines(SUB_TEST_HYDRO_THERMAL_DATA_FILE);
-
+    let mut my_thermals = Hydrothermal::new();
+    let thermal_reader = read_lines(SUB_HYDRO_THERMAL_DATA_FILE);
+    my_thermals.store_hydrothermal_data(thermal_reader);
+    my_thermals.fill_grid();
+    println!("Number of overlapping lines: {} ", my_thermals.draw_grid());
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
