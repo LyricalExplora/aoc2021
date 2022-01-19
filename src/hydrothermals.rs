@@ -67,7 +67,7 @@ impl Hydrothermal {
             y_diff = line.start.y - line.end.y;
         }
 
-        println!("{} {}", x_diff, y_diff);
+        // println!("{} {}", x_diff, y_diff);
 
         x_diff == y_diff
     }

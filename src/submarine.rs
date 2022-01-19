@@ -40,7 +40,6 @@ impl Submarine {
         }
     }
 
-
     // score rule: sum all un-called numbers on the board then multiply by last called number
     fn score_winning_board(board: &Vec<[i32; 5]>, last_called: i32) -> i32 {
         let mut winning_score = 0;
@@ -121,49 +120,6 @@ impl Submarine {
         }
     }
 
-    pub fn play_bingo(&mut self, reader: Result<Lines<BufReader<File>>, std::io::Error>) {
-        self.store_bingo_data(reader);
-        self.calculate_bingo_winner();
-        println!("last_winning {} ", self.last_winning_number);
-        if let Some(last_winner) = &self.winning_bingo_boards.pop() {
-            self.bingo_winning_score = Submarine::score_winning_board(last_winner, self.last_winning_number);
-        }
-    }
-
-    pub fn process_diagnostics(&mut self, reader: Result<Lines<BufReader<File>>, std::io::Error>) {
-        if let Ok(lines) = reader {
-            for line in lines {
-                if let Ok(bits) = line {
-                    let char_vec: Vec<char> = bits.chars().collect();
-                    self.store_diagnostics(char_vec);
-                }
-            }
-        }
-    }
-
-    pub fn move_sub(&mut self, reader: Result<Lines<BufReader<File>>, std::io::Error>) {
-        if let Ok(lines) = reader {
-            for line in lines {
-                if let Ok(movement) = line {
-                    let mut iter = movement.split_whitespace();
-                    if let Some(direction) = iter.next() {
-                        if let Some(distance_string) = iter.next() {
-                            if let Ok(distance_value) = distance_string.parse() {
-                                if direction == "forward" {
-                                    self.forward(distance_value);
-                                } else if direction == "down" {
-                                    self.down(distance_value);
-                                } else if direction == "up" {
-                                    self.up(distance_value);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     fn store_bingo_data(&mut self, reader: Result<Lines<BufReader<File>>, Error>) {
         let mut cur_row = [0; 5];
         let mut cur_board = vec![[0; 5]; 5];
@@ -202,6 +158,26 @@ impl Submarine {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    pub fn play_bingo(&mut self, reader: Result<Lines<BufReader<File>>, std::io::Error>) {
+        self.store_bingo_data(reader);
+        self.calculate_bingo_winner();
+        // println!("last_winning {} ", self.last_winning_number);
+        if let Some(last_winner) = &self.winning_bingo_boards.pop() {
+            self.bingo_winning_score = Submarine::score_winning_board(last_winner, self.last_winning_number);
+        }
+    }
+
+    pub fn process_diagnostics(&mut self, reader: Result<Lines<BufReader<File>>, std::io::Error>) {
+        if let Ok(lines) = reader {
+            for line in lines {
+                if let Ok(bits) = line {
+                    let char_vec: Vec<char> = bits.chars().collect();
+                    self.store_diagnostics(char_vec);
                 }
             }
         }
@@ -347,6 +323,29 @@ impl Submarine {
             bit_position += 1;
         }
         result
+    }
+
+    pub fn move_sub(&mut self, reader: Result<Lines<BufReader<File>>, std::io::Error>) {
+        if let Ok(lines) = reader {
+            for line in lines {
+                if let Ok(movement) = line {
+                    let mut iter = movement.split_whitespace();
+                    if let Some(direction) = iter.next() {
+                        if let Some(distance_string) = iter.next() {
+                            if let Ok(distance_value) = distance_string.parse() {
+                                if direction == "forward" {
+                                    self.forward(distance_value);
+                                } else if direction == "down" {
+                                    self.down(distance_value);
+                                } else if direction == "up" {
+                                    self.up(distance_value);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fn forward(&mut self, distance: i32) {
