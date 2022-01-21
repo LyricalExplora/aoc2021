@@ -35,18 +35,29 @@ impl CrabSwarm {
         self.positions[mid]
     }
 
+    fn sum_distance(distance: i64) -> i64 {
+
+        let mut result = 0;
+
+        for i in 0..distance {
+            result += i;
+        }
+        result
+    }
+
     pub fn get_min_dist_sum(&self) -> i64 {
-        let min = *self.positions.iter().min() ;
-        let max = *self.positions.iter().max().unwrap();
         let mut result = i64::MAX;
-
-        for postion in min..=max {
-            let mut new_result = 0;
-            for crab in &self.positions {
-                new_result += (crab - postion).abs();
+        if let Some(min) = self.positions.iter().min() {
+            if let Some(max) = self.positions.iter().max() {
+                for position in *min..=*max {
+                    // find the minimum value for each position across all the crabs
+                    let mut new_minimum = 0;
+                    for crab in &self.positions {
+                        new_minimum += (crab - position).abs() + CrabSwarm::sum_distance((crab - position).abs());
+                    }
+                    result = result.min(new_minimum);
+                }
             }
-
-            result = result.min(new_result);
         }
         result
     }

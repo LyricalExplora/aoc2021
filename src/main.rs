@@ -55,12 +55,12 @@ fn main() {
     // Day 6 - lanternfish
     let mut fish_population = lanternfish::FishPopulation::new();
     fish_population.store_population_data(read_lines(FISH_POPULATION_DATA_FILE));
-    println!("Fish population after 80 days: {}", fish_population.future(256));
+    // println!("Fish population after 80 days: {}", fish_population.future(256));
 
     // Day 7 - Treachery of Whales aka Crab Fuel
     let mut crab_swarm = crabs::CrabSwarm::new();
     crab_swarm.store_crab_swarm_position(read_lines(CRAB_POPULATION_DATA_FILE));
-    println!("{} ",  crab_swarm.get_min_dist_sum());
+    println!("Crab swarm minimum fuel required, part 1: {} ",  crab_swarm.get_min_dist_sum());
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
