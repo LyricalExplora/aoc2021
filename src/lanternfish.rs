@@ -56,8 +56,10 @@ impl FishPopulation {
                     let initial_fish: Vec<&str> = line_value.split(",").collect();
                     for fish_string in initial_fish {
                         if let Ok(fish) = fish_string.parse() {
+                            // First part solution.
                             // self.fish_population.push(fish);
-                            println!("{}", fish);
+
+                            // println!("{}", fish);
                             match fish {
                                 0 => self.day_zeros += 1,
                                 1 => self.day_ones += 1,
@@ -80,7 +82,6 @@ impl FishPopulation {
         
         for i in 0..days {
             self.advance_day();
-            println!("{}", self.total_fish());
         }
 
         self.total_fish()

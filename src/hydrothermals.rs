@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, Error, Lines};
 use std::num::ParseIntError;
-use core::intrinsics::wrapping_sub;
 
 const GRID_SIZE: usize = 1000;
 
