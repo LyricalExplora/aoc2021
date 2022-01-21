@@ -2,6 +2,7 @@ mod submarine;
 mod hydrothermals;
 mod lanternfish;
 mod crabs;
+mod digits;
 
 use std::fs::{File, read};
 use std::io::{self, BufRead};
@@ -18,10 +19,8 @@ const SUB_TEST2_HYDRO_THERMAL_DATA_FILE: &str = "./test_hydro_thermal_data2.txt"
 const SUB_HYDRO_THERMAL_DATA_FILE: &str = "./hydro_thermal_data.txt";
 const FISH_POPULATION_DATA_FILE: &str = "./lanternfish_data.txt";
 const TEST_FISH_POPULATION_DATA_FILE: &str = "./test_lanternfish_data.txt";
-const CRAB_POPULATION_DATA_FILE: &str = "./crab_fuel_data.txt";
-const TEST_CRAB_POPULATION_DATA_FILE: &str = "./test_crab_fuel_data.txt";
-
-
+const CRAB_FUEL_DATA_FILE: &str = "./crab_fuel_data.txt";
+const TEST_CRAB_FUEL_DATA_FILE: &str = "./test_crab_fuel_data.txt";
 
 fn main() {
     let mut my_sub = submarine::Submarine::new();
@@ -59,8 +58,13 @@ fn main() {
 
     // Day 7 - Treachery of Whales aka Crab Fuel
     let mut crab_swarm = crabs::CrabSwarm::new();
-    crab_swarm.store_crab_swarm_position(read_lines(CRAB_POPULATION_DATA_FILE));
-    println!("Crab swarm minimum fuel required, part 1: {} ",  crab_swarm.get_min_dist_sum());
+    crab_swarm.store_crab_swarm_position(read_lines(CRAB_FUEL_DATA_FILE));
+    // println!("Crab swarm minimum fuel required, part 1: {} ",  crab_swarm.get_min_dist_sum());
+
+    // Day 8 - Seven Segment Search
+    let mut digits = digits::DigitEncoding::new();
+
+
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
